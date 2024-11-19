@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExcludonFinder</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-bash.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css">
+</head>
+<body class="bg-gray-50">
+    <nav class="bg-blue-600 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 py-3">
+            <div class="flex items-center justify-between">
+                <div class="text-xl font-bold">ExcludonFinder</div>
+                <div class="space-x-4">
+                    <a href="#installation" class="hover:text-gray-200">Installation</a>
+                    <a href="#usage" class="hover:text-gray-200">Usage</a>
+                    <a href="#examples" class="hover:text-gray-200">Examples</a>
+                    <a href="https://github.com/yourusername/ExcludonFinder" class="hover:text-gray-200">GitHub</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <header class="bg-gradient-to-r from-blue-500 to-blue-700 text-white py-20">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <h1 class="text-4xl font-bold mb-4">ExcludonFinder</h1>
+            <p class="text-xl mb-8">A powerful tool for identifying and analyzing excludons in genomic data using RNA-seq data</p>
+            <div class="space-x-4">
+                <a href="#installation" class="bg-white text-blue-600 px-6 py-2 rounded-lg font-medium hover:bg-gray-100">Get Started</a>
+                <a href="https://github.com/yourusername/ExcludonFinder" class="border-2 border-white text-white px-6 py-2 rounded-lg font-medium hover:bg-white hover:text-blue-600">View on GitHub</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-12">
+        <section id="installation" class="mb-16">
+            <h2 class="text-3xl font-bold mb-6">Installation</h2>
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <pre><code class="language-bash">git clone https://github.com/yourusername/ExcludonFinder.git
+cd ExcludonFinder
+conda env create -f environment.yml
+conda activate Excludon_finder_env</code></pre>
+            </div>
+        </section>
+
+        <section id="usage" class="mb-16">
+            <h2 class="text-3xl font-bold mb-6">Usage</h2>
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-xl font-semibold mb-4">Basic Command</h3>
+                <pre><code class="language-bash">./scripts/Excludoner_relative2.sh -f &lt;reference.fasta&gt; -1 &lt;reads_R1.fastq&gt; -2 &lt;reads_R2.fastq&gt; -g &lt;annotation.gff&gt;</code></pre>
+                
+                <h3 class="text-xl font-semibold mt-8 mb-4">Options</h3>
+                <ul class="space-y-2">
+                    <li><code>-f</code>: Reference genome in FASTA format</li>
+                    <li><code>-1</code>: Input FASTQ file for Read 1</li>
+                    <li><code>-2</code>: Input FASTQ file for Read 2</li>
+                    <li><code>-g</code>: Annotation file in GFF format</li>
+                    <li><code>-t</code>: Coverage threshold (default: 0.5)</li>
+                    <li><code>-j</code>: Number of threads (default: 8)</li>
+                    <li><code>-l</code>: Use minimap2 for long-read data</li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="examples" class="mb-16">
+            <h2 class="text-3xl font-bold mb-6">Example</h2>
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <pre><code class="language-bash">./scripts/Excludoner_relative2.sh \
+  -f data/example/EColi_K12_substr._MG1655.fasta \
+  -1 data/example/test_R1.fastq \
+  -2 data/example/test_R2.fastq \
+  -g data/example/test_ecoli.gff \
+  -t 0.6 \
+  -j 4</code></pre>
+            </div>
+        </section>
+
+        <section id="features" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h3 class="text-xl font-bold mb-2">Fast Processing</h3>
+                <p>Parallel processing support for quick analysis of large datasets</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h3 class="text-xl font-bold mb-2">Flexible Input</h3>
+                <p>Support for both paired-end and single-end RNA-seq data</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h3 class="text-xl font-bold mb-2">Quality Control</h3>
+                <p>Built-in quality checks and mapping statistics</p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-gray-800 text-white py-8">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <p>© 2024 ExcludonFinder. Released under MIT License.</p>
+        </div>
+    </footer>
+</body>
+</html>

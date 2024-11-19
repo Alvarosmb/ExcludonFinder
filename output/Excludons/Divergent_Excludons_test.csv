@@ -1,0 +1,7 @@
+"","seqnames","start","end","strand","type","locus_tag","gene","transcript_start","transcript_end","gene_coverage","Type","Overlapping_cov_plus","Overlapping_cov_minus"
+"3","U00096.3",10643,11356,"-","CDS","b0011","yaaW",10574,11356,8,"Excludon","1","8"
+"4","U00096.3",10830,11315,"+","CDS","b0012","mbiA",10830,20319,2,"Excludon","",""
+"5","U00096.3",11382,11786,"-","CDS","b0013","yaaI",10568,15671,5,"Excludon","813","37"
+"6","U00096.3",12163,14079,"+","CDS","b0014","dnaK",12125,14098,1250,"Excludon","",""
+"9","U00096.3",20815,21078,"-","CDS","b0023","rpsT",20815,21155,3046,"Excludon","87","2774"
+"10","U00096.3",21181,21399,"+","CDS","b0024","yaaY",20824,27263,44,"Excludon","",""

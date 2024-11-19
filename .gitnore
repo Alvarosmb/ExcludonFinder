@@ -1,0 +1,22 @@
+# Output directories
+output/
+
+# Index files
+*.0123
+*.amb
+*.ann
+*.bwt.2bit.64
+*.pac
+
+# Environment
+.conda/
+*.env
+
+# System files
+.DS_Store
+.vscode/
+__pycache__/
+*.pyc
+
+# Log files
+*.log
