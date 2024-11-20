@@ -55,7 +55,7 @@ Basic command:
 ```
 
 ## Examples 
-The data/examples directory contains test RNA-seq data from E. coli K12 MG1655. For faster testing and analysis, the dataset is reduced to reads mapping only to the first 50 genes. Expected results can be found in output/Excludons.
+The data/examples directory contains test RNA-seq data from E. coli K12 MG1655. For faster testing and analysis, the dataset is reduced to reads mapping only to the first 50 genes. Expected results can be found in data/examples/output/.
 
 ## Citation
 If you found this tool useful, please cite:
