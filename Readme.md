@@ -6,7 +6,7 @@ An easy to use tool for identifying and analyzing excludons in genomic data usin
 ## Outline 
 ![rect1](https://github.com/user-attachments/assets/2f5b3e48-0eb2-422f-bf42-ecdc8ef19b9c)
 
- From a given RNA-seq data, alignment is performed against reference genome (1) and coverage per nucleotide is calculated (2).  
+ From a given RNA-seq data, alignment is performed against reference genome (1) and coverage per nucleotide is calculated (2).
 Convergent (-> <-) and divergent (<- ->) pairs of genes are substarcted and median covergage is calculated for each of them (3). Trancriptional units (TUs) for each gene is annotated (4) based on gene coverage. A threshold of the covegare decreasing is set, gene gene expression decays under this threshold transcription start and end sites (TSS and TTS) is set. If TUs of convergen and divergent pairs overlaps, this pair is annotated as Excludon (5). 
 
 ## Features
@@ -57,7 +57,7 @@ Basic command:
 ## Examples 
 The data/examples directory contains test RNA-seq data from E. coli K12 MG1655. For faster testing and analysis, the dataset is reduced to reads mapping only to the first 50 genes. Expected results can be found in output/Excludons.
 
-##Citation
+## Citation
 If you found this tool useful, please cite:
 ```text
 Pablo Iturbe, Alvaro San Martín, Hiroshi Hamamoto, Marina Marcet-Houben, Toni Galbaldón, Cristina Solano, Iñigo Lasa, Noncontiguous operon atlas for the Staphylococcus aureus genome, microLife, Volume 5, 2024, uqae007, https://doi.org/10.1093/femsml/uqae007
