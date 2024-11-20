@@ -1,4 +1,4 @@
-name: Excludon_finder_env
+name: ExcludonFinder
 channels:
   - bioconda
   - conda-forge
