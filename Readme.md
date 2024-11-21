@@ -22,7 +22,7 @@ Convergent (-> <-) and divergent (<- ->) pairs of genes are substarcted and medi
 git clone https://github.com/Alvarosmb/ExcludonFinder.git
 cd ExcludonFinder
 conda env create -f environment.yml
-conda activate Excludon_finder_env
+conda activate ExcludonFinder
 ```
 
 ## Usage
