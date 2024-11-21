@@ -88,8 +88,8 @@ check_requirements() {
     local errors=0
 
     # Check Scripts directory
-    if [[ ! -d "Scripts" ]]; then
-        print_status "Error: Scripts directory not found"
+    if [[ ! -d "scripts" ]]; then
+        print_status "Error: scripts directory not found"
         return 1
     fi
 
@@ -155,7 +155,7 @@ main() {
     print_section "Running pipeline"
     
     # Run the main script with formatted output processing
-    bash Scripts/main.sh "$@" 2>&1 | while IFS= read -r line; do
+    bash scripts/main.sh "$@" 2>&1 | while IFS= read -r line; do
         case "$line" in
             "PAIRED_END")
                 print_status "Data type: Paired-end reads detected"
