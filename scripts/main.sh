@@ -12,12 +12,7 @@ for cmd in conda bwa-mem2 samtools minimap2; do
   fi
 done
 
-# Initialize conda
-eval "$(conda shell.bash hook)"
-conda activate Excludon_finder_env >/dev/null 2>&1 || {
-  echo "Error: Failed to activate Excludon_finder_env" >&2
-  exit 1
-}
+
 
 # Set default values for options
 threshold=0.5
@@ -215,7 +210,7 @@ echo "STARTING_ANNOTATION" >&2
 conda deactivate
 
 # Run Excludon annotation
-Rscript Scripts/Tus_annotation.R "$fasta_input" "$gff_input" "$bam" "$sample" "$threshold" "$N_threads"
+Rscript scripts/Tus_annotation.R "$fasta_input" "$gff_input" "$bam" "$sample" "$threshold" "$N_threads"
 
 # Cleanup temporary files
 rm  -r "output/alignment/"
