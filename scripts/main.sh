@@ -210,7 +210,7 @@ echo "STARTING_ANNOTATION" >&2
 
 
 # Run Excludon annotation
-Rscript scripts/Tus_annotation.R "$fasta_input" "$gff_input" "$bam" "$sample" "$threshold" "$N_threads"
+Rscript scripts/TUs_annotation.R "$fasta_input" "$gff_input" "$bam" "$sample" "$threshold" "$N_threads"
 
 # Cleanup temporary files
 rm  -r "output/alignment/"
