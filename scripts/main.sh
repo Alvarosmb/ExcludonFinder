@@ -207,7 +207,7 @@ done
 echo "DEPTH COMPLETED" >&2
 
 echo "STARTING_ANNOTATION" >&2
-conda deactivate
+
 
 # Run Excludon annotation
 Rscript scripts/Tus_annotation.R "$fasta_input" "$gff_input" "$bam" "$sample" "$threshold" "$N_threads"
