@@ -28,7 +28,7 @@ gff_input=""
 use_minimap2=false
 run_control_script=false
 
-while getopts "f:1:2:g:t:j:lC" opt; do  # Changed -r to -t and -t to -j
+while getopts "f:1:2:g:t:j:lC" opt; do  
   case ${opt} in
     f ) fasta_input=$(realpath "${OPTARG}");;
     1 ) fastq_input1=$(realpath "${OPTARG}");;
@@ -61,16 +61,6 @@ if [ -n "$fastq_input2" ] && [ ! -r "$fastq_input2" ]; then
   exit 1
 fi
 
-# Handle gzipped FASTQ files
-process_fastq() {
-  local input=$1
-  if [[ $input == *.gz ]]; then
-    gunzip -c "$input" > "${input%.gz}"
-    echo "${input%.gz}"
-  else
-    echo "$input"
-  fi
-}
 
 # Process input files
 fastq_input1_processed=$(process_fastq "$fastq_input1")
@@ -125,7 +115,7 @@ else
     samtools sort -@ "$N_threads" -o "output/alignment/${sample}_sorted.bam" 2>/dev/null
 fi
 
-# Index the final BAM file
+
 if ! samtools index "output/alignment/${sample}_sorted.bam"; then
   echo "Error: BAM indexing failed" >&2
   exit 1
@@ -144,7 +134,6 @@ if $run_control_script; then
     # Create a temporary file for both stdout and stderr
     temp_file=$(mktemp)
     
-    # Run featureCounts and redirect both stdout and stderr to temp file
     if $use_minimap2; then
         featureCounts -a "$gff_input" -F GFF3 -t CDS -T "$N_threads" -L "$bam" -o "output/coverage_data/${sample}_counts.txt" > "$temp_file" 2>&1
     elif [ "$Paired" = "TRUE" ]; then
@@ -153,13 +142,13 @@ if $run_control_script; then
         featureCounts -a "$gff_input" -F GFF3 -t CDS -T "$N_threads" "$bam" -o "output/coverage_data/${sample}_counts.txt" > "$temp_file" 2>&1
     fi
     
-    # Extract the alignment rate more robustly
+    # Extract the alignment rate 
     if ! alignment_rate=$(grep "Assignment rate" "$temp_file" | grep -o '[0-9]\+\.[0-9]\+'); then
         # If the first grep fails, try an alternative pattern
         alignment_rate=$(grep "Successfully assigned" "$temp_file" | grep -o '[0-9]\+\.[0-9]\+')
     fi
     
-    # Check if we got a valid alignment rate
+    # Check data status
     if [ -n "$alignment_rate" ]; then
         if (( $(echo "$alignment_rate < 80" | bc -l) )); then
             echo "WARNING: Low percentage of mapped reads to CDSs detected (${alignment_rate}%)"
@@ -177,7 +166,7 @@ fi
 echo "CALCULATING_DEPTH" >&2
 # Process reads based on strand
 if [ "$Paired" = "TRUE" ]; then
-    # Paired-end processing
+    # Paired-end 
     samtools view -h -f 0x40 -F 0x10 "$bam" > "output/alignment/${sample}_plus_strand_1.sam"
     samtools view -h -f 0x80 -f 0x10 "$bam" > "output/alignment/${sample}_plus_strand_2.sam"
     samtools merge -f "output/alignment/${sample}_plus_strand_merged.bam" \
@@ -190,12 +179,12 @@ if [ "$Paired" = "TRUE" ]; then
         "output/alignment/${sample}_minus_strand_1.sam" \
         "output/alignment/${sample}_minus_strand_2.sam"
 else
-    # Single-end processing
+    # Single-end 
     samtools view -bh -F 0x14 "$bam" > "output/alignment/${sample}_plus_strand_merged.bam"
     samtools view -bh -f 0x10 -F 0x4 "$bam" > "output/alignment/${sample}_minus_strand_merged.bam"
 fi
 
-# Sort and index strands
+
 for strand in plus minus; do
     samtools sort -@ "$N_threads" "output/alignment/${sample}_${strand}_strand_merged.bam" \
         -o "output/alignment/${sample}_${strand}_strand_sorted.bam" 2>/dev/null 
