@@ -62,13 +62,7 @@ if [ -n "$fastq_input2" ] && [ ! -r "$fastq_input2" ]; then
 fi
 
 
-# Process input files
-fastq_input1_processed=$(process_fastq "$fastq_input1")
-if [ -n "$fastq_input2" ]; then
-  fastq_input2_processed=$(process_fastq "$fastq_input2")
-  Paired="TRUE"
-  echo "PAIRED_END" >&2
-fi
+
 
 # Replace ID for gene_id if necessary
 sed -i 's/ID/gene_id/g' "$gff_input"
@@ -77,11 +71,11 @@ sed -i 's/ID/gene_id/g' "$gff_input"
 if [ -z "$fastq_input2" ]; then
   filename=$(basename "$fastq_input1")
   sample=${filename%.fastq*}
-  input_fastq_option="$fastq_input1_processed"
+  input_fastq_option="$fastq_input1"
 else
   filename1=$(basename "$fastq_input1")
   sample=${filename1%_R1.fastq*}
-  input_fastq_option="$fastq_input1_processed $fastq_input2_processed"
+  input_fastq_option="$fastq_input1 $fastq_input2"
 fi
 
 # Create output directories
@@ -92,7 +86,7 @@ echo "STARTING_ALIGNMENT" >&2
 if $use_minimap2; then
   echo "Data type: Long reads detected" >&2
   # Modified minimap2 command with additional error checking
-  if ! minimap2 -t "$N_threads" -a -p 0.99 -k14 --MD -uf "$fasta_input" "$fastq_input1_processed" > "output/alignment/${sample}_temp.sam" 2>/dev/null; then
+  if ! minimap2 -t "$N_threads" -a -p 0.99 -k14 --MD -uf "$fasta_input" "$fastq_input1" > "output/alignment/${sample}_temp.sam" 2>/dev/null; then
     echo "Error: minimap2 alignment failed" >&2
     exit 1
   fi
