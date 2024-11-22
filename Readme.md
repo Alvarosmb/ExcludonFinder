@@ -60,5 +60,6 @@ The data/examples directory contains test RNA-seq data from E. coli K12 MG1655. 
 ## Citation
 If you found this tool useful, please cite:
 ```text
-Pablo Iturbe, Alvaro San Martín, Hiroshi Hamamoto, Marina Marcet-Houben, Toni Galbaldón, Cristina Solano, Iñigo Lasa, Noncontiguous operon atlas for the Staphylococcus aureus genome, microLife, Volume 5, 2024, uqae007, https://doi.org/10.1093/femsml/uqae007
+Alvaro Sanmartin, Pablo Iturbe, Jeronimo Rodriguez-Beltran, Iñigo Lasa. ExcludonFinder: Mapping Transcriptional Overlaps Between Neighboring Genes
+
 ```
