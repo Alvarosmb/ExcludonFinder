@@ -4,6 +4,7 @@ input_bam <- as.character(commandArgs(trailingOnly = TRUE)[3])
 sample <-as.character(commandArgs(trailingOnly = TRUE)[4])
 threshold <- as.numeric(commandArgs(trailingOnly = TRUE)[5])
 N.threads <- as.integer(commandArgs(trailingOnly = TRUE)[6])
+num_cores <- N.threads
 
 suppressMessages({
   suppressWarnings({
@@ -38,24 +39,17 @@ suppressPackageStartupMessages({
 ### Load input data
 gff <- rtracklayer::import(input_gff)
 gff <- as.data.frame(gff)
-interesting_features <- c("CDS")
-feature_types <- unique(gff$type)
-interesting_list <- intersect(interesting_features, feature_types)
-gff <- gff[gff$type %in% interesting_list, ]
-list_chr <- unique(gff$seqnames)
-
-
-
+gff <- gff[gff$type == "CDS", ]
 duplicated_columns <- names(gff)[duplicated(names(gff))]
 gff <- gff[, !names(gff) %in% duplicated_columns]
 
+
+#### Remove isoforms
 # Group by locus_tag and filter the row with the maximum width
 gff <- gff %>%
   group_by(locus_tag) %>%
   filter(end - start == max(end - start))
 gff <- as.data.frame(gff)
-
-#gff$locus_tag <- gsub(".*locus_tag=([^;]+);.*", "\\1", gff$locus_tag)
 
 #### Subset convergent and divergent pairs of genes
 #gff <- gff[gff$seqnames == list_chr[1],]
@@ -66,10 +60,7 @@ for (i in 1:(nrow(gff) - 1)) {
     convergent_genes <- append(convergent_genes, list(c(i, i + 1)))
   }
 }
-
 convergent_genes <- gff[unlist(convergent_genes), ]
-
-
 
 divergent_genes<- list()
 for (i in 1:(nrow(gff) - 1)) {
@@ -87,7 +78,7 @@ genes_of_interest <- rbind(convergent_genes, divergent_genes)
 plus_genes <- unique(genes_of_interest$locus_tag[genes_of_interest$strand == "+"])
 minus_genes <- unique(genes_of_interest$locus_tag[genes_of_interest$strand == "-"])
 
-num_cores <- N.threads
+
 ##### Coverage #####
 depth_plus <- read.table(paste0("output/coverage_data/", sample, "_plus_depth.txt"),
                          sep = "\t", header = FALSE)
@@ -102,13 +93,13 @@ depth_minus <- read.table(paste0("output/coverage_data/", sample, "_minus_depth.
 depth_plus <- depth_plus[!duplicated(depth_plus), ]
 depth_minus <- depth_minus[!duplicated(depth_minus), ]
 
+
+### Confirm strandness of data
 random_genes <- gff %>% 
   filter(strand == "+") %>% 
   sample_n(50)
 
-
 get_coverage <- function(gene_id){
-  
   
   start <- gff[gff$locus_tag == gene_id, ]$start
   end <- gff[gff$locus_tag == gene_id, ]$end
@@ -133,10 +124,7 @@ if (median_plus_values < median_minus_values) {
 }
 
 
-#### Transcript annotation
-
-
-# Load required libraries
+######## Transcript annotation  #######
 
 # Clean up any existing connections
 if (exists("cl")) {
@@ -145,7 +133,6 @@ if (exists("cl")) {
 }
 closeAllConnections()
 
-# Define the main processing function
 calculate_transcript_info <- function(gene_id, depth_table) {
   locus_tag <- gff[gff$locus_tag == gene_id, ]$locus_tag
   gene_name <- gff[gff$locus_tag == gene_id, ]$gene
@@ -175,10 +162,9 @@ calculate_transcript_info <- function(gene_id, depth_table) {
   } else {
     0
   }
-  print(threshold)
+ 
   cov_threshold <- threshold * gene_coverage
   
-  # Rest of the function remains the same...
   is_below_threshold1 <- sapply(coverage[1:min(6, length(coverage))], function(x) x < cov_threshold)
   
   if (sum(is_below_threshold1) == min(6, length(coverage)) | gene_coverage == 0) {
@@ -239,8 +225,6 @@ transcripts_df <- rbind(results_list_plus, results_list_minus)
 
 
 ######## OVERLAP ANNOTATION #######
-
-
 df_convergent <- convergent_genes %>%
   left_join(transcripts_df %>%
               select(transcript_start, transcript_end, gene_coverage, locus_tag),
@@ -251,7 +235,6 @@ df_convergent <- convergent_genes %>%
          Overlapping_cov_minus = "")
 
 
-# Modified loop with error handling
 for (i in seq(1, nrow(df_convergent) - 1, 2)) {
   tryCatch({
     transcript_end <- df_convergent[i, ]$transcript_end
@@ -282,8 +265,6 @@ for (i in seq(1, nrow(df_convergent) - 1, 2)) {
 df_convergent_Excludons <- df_convergent[df_convergent$Type == "Excludon", ]
 
 ###############################################
-###############################################
-
 df_divergent <- divergent_genes %>%
   left_join(transcripts_df %>%
               select(transcript_start, transcript_end, gene_coverage, locus_tag),
@@ -294,8 +275,6 @@ df_divergent <- divergent_genes %>%
          Overlapping_cov_minus = "")
 
 
-
-# Modified loop with error handling for divergent genes
 for (i in seq(1, nrow(df_divergent) - 1, 2)) {
   tryCatch({
     transcript_end <- df_divergent[i, ]$transcript_end
