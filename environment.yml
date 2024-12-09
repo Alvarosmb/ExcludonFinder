@@ -25,16 +25,6 @@ dependencies:
   - r-biocmanager=1.30.19
   - bioconductor-rtracklayer=1.54.0
   
-  # For parallel processing
-  - r-iterators=1.0.13
-  
-  # System utilities
-  - bc=1.07.1
-  - gawk=5.1.0
-  - sed=4.8
-  
-  # Development tools
-  - git=2.34.1
   
   # Pipeline management
   - parallel=20211022
