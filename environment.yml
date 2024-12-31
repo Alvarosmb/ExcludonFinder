@@ -18,7 +18,7 @@ dependencies:
   # R packages for data manipulation
   - r-dplyr=1.0.7
   - r-foreach=1.5.2
-  - r-doparallel=1.0.17
+  - r-doParallel=1.0.17
   - r-data.table=1.14
   
   # Bioconductor packages
