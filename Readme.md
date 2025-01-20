@@ -1,6 +1,7 @@
 # ExcludonFinder
 ![Untitled (7)](https://github.com/user-attachments/assets/07e51f4a-bec1-4305-9f3e-280db14282e8)
 
+[![Bioconda](https://img.shields.io/conda/vn/bioconda/excludonfinder.svg)](https://bioconda.github.io/recipes/excludonfinder/README.html)
 
 An easy to use tool for identifying and analyzing excludons in genomic data using RNA-seq data.
 ## Outline 
@@ -18,6 +19,11 @@ Convergent (-> <-) and divergent (<- ->) pairs of genes are substarcted and medi
 
 ## Installation
 
+### Using Conda (Recommended)
+```bash
+conda install -c bioconda excludonfinder
+
+### From source
 ```bash
 git clone https://github.com/Alvarosmb/ExcludonFinder.git
 cd ExcludonFinder
@@ -25,12 +31,16 @@ conda env create -f environment.yml
 conda activate ExcludonFinder
 ```
 
+```markdown
 ## Usage
 
-Basic command:
+### If installed with conda:
 ```bash
+ExcludonFinder -f <reference.fasta> -1 <reads_R1.fastq> -2 <reads_R2.fastq> -g <annotation.gff>
+
+### If installed from source
+``` bash
 ./scripts/ExcludonFinder.sh -f <reference.fasta> -1 <reads_R1.fastq> -2 <reads_R2.fastq> -g <annotation.gff>
-```
 
 ### Options
 
