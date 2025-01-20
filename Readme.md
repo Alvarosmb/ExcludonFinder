@@ -20,30 +20,29 @@ Convergent (-> <-) and divergent (<- ->) pairs of genes are substarcted and medi
 ## Installation
 
 ### Using Conda (Recommended)
-```bash
+```markdown
 conda install -c bioconda excludonfinder
-
+```
 ### From source
-```bash
+```markdown
 git clone https://github.com/Alvarosmb/ExcludonFinder.git
 cd ExcludonFinder
 conda env create -f environment.yml
 conda activate ExcludonFinder
 ```
 
-```markdown
 ## Usage
 
 ### If installed with conda:
-```bash
+```markdown
 ExcludonFinder -f <reference.fasta> -1 <reads_R1.fastq> -2 <reads_R2.fastq> -g <annotation.gff>
-
+```
 ### If installed from source
-``` bash
+``` markdown
 ./scripts/ExcludonFinder.sh -f <reference.fasta> -1 <reads_R1.fastq> -2 <reads_R2.fastq> -g <annotation.gff>
-
+```
 ### Options
-
+``` markdown
 - `-f`: Reference genome in FASTA format
 - `-1`: Input FASTQ file for Read 1
 - `-2`: Input FASTQ file for Read 2
@@ -51,10 +50,10 @@ ExcludonFinder -f <reference.fasta> -1 <reads_R1.fastq> -2 <reads_R2.fastq> -g <
 - `-t`: Coverage threshold (default: 0.5)
 - `-j`: Number of threads (default: 8)
 - `-l`: Long-read data
-
+```
 ## Example
 
-```bash
+```markdown
 ./scripts/ExcludonFinder.sh \
   -f data/example/E.coli_K12_MG1655.fasta \
   -1 data/example/test_R1.fastq \
