@@ -1,8 +1,50 @@
 #!/bin/bash
+
+
+# Get the location of this script and the scripts directory
+SCRIPT_DIR="$(dirname "$(readlink -f "$(which ExcludonFinder)")")"
+PACKAGE_DIR="$(dirname "$SCRIPT_DIR")"
+SCRIPTS_PATH="$PACKAGE_DIR/share/excludonfinder/scripts"
+
 # Function to check if command exists
 command_exists() {
   command -v "$1" >/dev/null 2>&1
 }
+
+
+# Help message function
+show_help() {
+    cat << EOF
+ExcludonFinder main processing script
+
+Usage: 
+    main.sh -f <reference.fasta> -1 <reads_R1.fastq> [-2 <reads_R2.fastq>] -g <annotation.gff> [options]
+
+Required arguments:
+    -f <file>    Reference genome in FASTA format
+    -1 <file>    Input FASTQ file (Read 1 for paired-end data)
+    -g <file>    Annotation file in GFF format
+
+Optional arguments:
+    -2 <file>    Input FASTQ file (Read 2 for paired-end data)
+    -t <float>   Coverage threshold (default: 0.5)
+    -j <int>     Number of threads (default: 8)
+    -l           Use long-read mode (uses minimap2 instead of bwa-mem2)
+    -C           Run quality control checks
+    -h, --help   Show this help message
+
+This is the main processing script that handles the actual analysis of excludon data.
+It should typically be called by the ExcludonFinder wrapper script rather than directly.
+EOF
+}
+
+# Check for help flags first
+if [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
+    show_help
+    exit 0
+fi
+
+
 
 # Check for required commands
 for cmd in conda bwa-mem2 samtools minimap2; do
@@ -193,7 +235,7 @@ echo "STARTING_ANNOTATION" >&2
 
 
 # Run Excludon annotation
-Rscript scripts/TUs_annotation.R "$fasta_input" "$gff_input" "$bam" "$sample" "$threshold" "$N_threads"
+Rscript "$SCRIPTS_PATH/TUs_annotation.R" "$fasta_input" "$gff_input" "$bam" "$sample" "$threshold" "$N_threads"
 
 # Cleanup temporary files
 rm  -r "output/alignment/"
