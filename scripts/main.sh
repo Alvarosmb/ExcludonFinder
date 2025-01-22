@@ -5,6 +5,8 @@
 SCRIPT_DIR="$(dirname "$(readlink -f "$(which ExcludonFinder)")")"
 PACKAGE_DIR="$(dirname "$SCRIPT_DIR")"
 SCRIPTS_PATH="$PACKAGE_DIR/share/excludonfinder/scripts"
+export SCRIPTS_PATH
+
 
 # Function to check if command exists
 command_exists() {
@@ -43,6 +45,16 @@ if [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
     show_help
     exit 0
 fi
+
+
+
+
+# Verify SCRIPTS_PATH is available
+if [ -z "$SCRIPTS_PATH" ]; then
+    echo "Error: SCRIPTS_PATH is not set" >&2
+    exit 1
+fi
+
 
 
 
