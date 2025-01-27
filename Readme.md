@@ -2,6 +2,9 @@
 ![Untitled (7)](https://github.com/user-attachments/assets/07e51f4a-bec1-4305-9f3e-280db14282e8)
 
 [![Bioconda](https://img.shields.io/conda/vn/bioconda/excludonfinder.svg)](https://bioconda.github.io/recipes/excludonfinder/README.html)
+[![DOI](https://zenodo.org/badge/891006331.svg)](https://doi.org/10.5281/zenodo.14745180)
+
+
 
 An easy to use tool for identifying and analyzing excludons in genomic data using RNA-seq data.
 ## Outline 
