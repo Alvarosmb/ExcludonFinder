@@ -1,22 +1,35 @@
 #!/bin/bash
 
+# Verify SCRIPTS_PATH is set
+if [ -z "$SCRIPTS_PATH" ]; then
+    # Try to set it automatically if not set
+    SCRIPT_DIR="$(dirname "$(readlink -f "$(which ExcludonFinder)")")"
+    PACKAGE_DIR="$(dirname "$SCRIPT_DIR")"
+    SCRIPTS_PATH="$PACKAGE_DIR/share/excludonfinder/scripts"
+    export SCRIPTS_PATH
+fi
 
-# Get the location of this script and the scripts directory
-SCRIPT_DIR="$(dirname "$(readlink -f "$(which ExcludonFinder)")")"
-PACKAGE_DIR="$(dirname "$SCRIPT_DIR")"
-SCRIPTS_PATH="$PACKAGE_DIR/share/excludonfinder/scripts"
-export SCRIPTS_PATH
+# Verify the directory exists and contains required files
+if [ ! -d "$SCRIPTS_PATH" ]; then
+    echo "Error: Scripts directory not found at $SCRIPTS_PATH" >&2
+    exit 1
+fi
 
+if [ ! -f "$SCRIPTS_PATH/TUs_annotation.R" ]; then
+    echo "Error: Required script TUs_annotation.R not found in $SCRIPTS_PATH" >&2
+    exit 1
+fi
 
 # Function to check if command exists
 command_exists() {
-  command -v "$1" >/dev/null 2>&1
+    command -v "$1" >/dev/null 2>&1
 }
-
 
 # Help message function
 show_help() {
     cat << EOF
+
+
 ExcludonFinder main processing script
 
 Usage: 
