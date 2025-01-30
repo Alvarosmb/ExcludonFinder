@@ -2,17 +2,43 @@
 
 print_header(){
   cat << 'EOF'
-   ______          _           _               ______ _           _                        
-  |  ____|        | |         | |             |  ____(_)         | |           
-  | |__  __  _____| |_   _  __| | ___  _ __   | |__   _ _ __   __| | ___ _ __   
-  |  __| \ \/ / __| | | | |/ _` |/ _ \| '_ \  |  __| | | '_ \ / _` |/ _ \ '__|   
-  | |____ >  < (__| | |_| | (_| | (_) | | | | | |    | | | | | (_| |  __/ |     
-  |______/_/\_\___|_|\__,_|\__,_|\___/|_| |_| |_|    |_|_| |_|\__,_|\___|_|      
+   ______          _           _               ______ _           _
+  |  ____|        | |         | |             |  ____(_)         | |
+  | |__  __  _____| |_   _  __| | ___  _ __   | |__   _ _ __   __| | ___ _ __
+  |  __| \ \/ / __| | | | |/ _` |/ _ \| '_ \  |  __| | | '_ \ / _` |/ _ \ '__|
+  | |____ >  < (__| | |_| | (_| | (_) | | | | | |    | | | | | (_| |  __/ |
+  |______/_/\_\___|_|\__,_|\__,_|\___/|_| |_| |_|    |_|_| |_|\__,_|\___|_|
      --------------------------------------------
                --------------------------------------------
                                            --------------------------------------------
                                                       --------------------------------------------
-                                        V1.0.0                                                                                                                                                          
+                                        V1.0.0
+
+EOF
+}
+
+# Add help message function
+show_help() {
+    cat << EOF
+ExcludonFinder: A tool for identifying and analyzing excludons in genomic data
+
+Usage: 
+    ExcludonFinder -f <reference.fasta> -1 <reads_R1.fastq> [-2 <reads_R2.fastq>] -g <annotation.gff> [options]
+
+Required arguments:
+    -f <file>    Reference genome in FASTA format
+    -1 <file>    Input FASTQ file (Read 1 for paired-end data)
+    -g <file>    Annotation file in GFF format
+
+Optional arguments:
+    -2 <file>    Input FASTQ file (Read 2 for paired-end data)
+    -t <float>   Coverage threshold (default: 0.5)
+    -j <int>     Number of threads (default: 8)
+    -l           Use long-read mode (uses minimap2 instead of bwa-mem2)
+    -C           Run quality control checks
+    -h, --help   Show this help message
+
+For more information, visit: https://github.com/Alvarosmb/ExcludonFinder
 EOF
 }
 
@@ -29,7 +55,7 @@ print_section() {
     local width=78
     local title_len=${#title}
     local padding=$(( (width - title_len) / 2 - 2 ))
-    
+
     echo "//==============================================================================\\\\"
     echo "||                                                                              ||"
     printf "||%*s%s%*s||\n" $padding "" "$title" $(( width - title_len - padding  )) ""
@@ -66,6 +92,11 @@ parse_args() {
             -j) shift; threads="$1" ;;
             -l) long_reads="yes" ;;
             -C) qc="yes" ;;
+            -h|--help)
+                print_header
+                show_help
+                exit 0
+                ;;
             *) echo "Error: Unknown option: $1"; exit 1 ;;
         esac
         shift
@@ -83,13 +114,49 @@ check_file() {
     return 0
 }
 
+
+# Get script locations (añadir esto justo después de las definiciones de funciones)
+find_scripts_path() {
+    # First try: Check if SCRIPTS_PATH is already set
+    if [ -n "$SCRIPTS_PATH" ] && [ -d "$SCRIPTS_PATH" ]; then
+        return 0
+    fi
+
+    # Second try: Check if we're running from source directory
+    LOCAL_DIR="$(dirname "$(readlink -f "$0")")"
+    if [ -d "$LOCAL_DIR/scripts" ]; then
+        SCRIPTS_PATH="$LOCAL_DIR/scripts"
+        export SCRIPTS_PATH
+        return 0
+    fi
+
+    # Third try: Check conda/standard installation path
+    INSTALL_DIR="$(dirname "$(dirname "$(readlink -f "$(which ExcludonFinder)")")")"
+    if [ -d "$INSTALL_DIR/share/excludonfinder/scripts" ]; then
+        SCRIPTS_PATH="$INSTALL_DIR/share/excludonfinder/scripts"
+        export SCRIPTS_PATH
+        return 0
+    fi
+
+    # If we get here, we couldn't find the scripts
+    echo "Error: Could not find scripts directory. Please ensure ExcludonFinder is properly installed."
+    return 1
+}
+
+# Find and validate scripts path
+if ! find_scripts_path; then
+    exit 1
+fi
+
+
+
 # Function to check all requirements with consistent error reporting
 check_requirements() {
     local errors=0
 
     # Check Scripts directory
-    if [[ ! -d "scripts" ]]; then
-        print_status "Error: scripts directory not found"
+    if [[ ! -d "$SCRIPTS_PATH" ]]; then
+        print_status "Error: scripts directory not found at $SCRIPTS_PATH"
         return 1
     fi
 
@@ -97,7 +164,7 @@ check_requirements() {
     check_file "$fasta_file" "FASTA" || ((errors++))
     check_file "$gff_file" "GFF" || ((errors++))
     check_file "$fastq_r1" "FASTQ R1" || ((errors++))
-    
+
     # Only check R2 if it was provided
     if [[ -n "$fastq_r2" ]]; then
         check_file "$fastq_r2" "FASTQ R2" || ((errors++))
@@ -108,6 +175,7 @@ check_requirements() {
 
     return $errors
 }
+
 
 move_cursor_up() {
     echo -en "\033[${1}A"
@@ -123,13 +191,20 @@ clear_lines_below() {
 }
 
 main() {
+    # Check for help flags first
+    if [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
+        print_header
+        show_help
+        exit 0
+    fi
+
     # Clear screen and print header
     clear
     print_header
-    
+
     # Parse command line arguments
     parse_args "$@"
-    
+
     # Check requirements
     if ! check_requirements; then
         print_section "Error"
@@ -137,7 +212,7 @@ main() {
         print_footer
         exit 1
     fi
-    
+
     # Print configuration with consistent formatting
     print_section "Configuration"
     print_status "FASTA file  : $fasta_file"
@@ -150,12 +225,12 @@ main() {
     [[ "$long_reads" == "yes" ]] && print_status "Long reads  : Yes"
     [[ "$qc" == "yes" ]] && print_status "QC enabled  : Yes"
     print_footer
-    
+
     # Start progress monitoring with improved formatting
     print_section "Running pipeline"
-    
+
     # Run the main script with formatted output processing
-    bash scripts/main.sh "$@" 2>&1 | while IFS= read -r line; do
+    bash "$SCRIPTS_PATH/main.sh" "$@" 2>&1 | while IFS= read -r line; do
         case "$line" in
             "PAIRED_END")
                 print_status "Data type: Paired-end reads detected"
@@ -240,7 +315,7 @@ EOF
             "#####"*)
                 ;;
             *)
-                if [[ -n "$line" && ! "$line" =~ ^[[:space:]]*$ && 
+                if [[ -n "$line" && ! "$line" =~ ^[[:space:]]*$ &&
                     ! "$line" =~ ^\[1\] && ! "$line" =~ ^"STARTING_ANNOTATION"$ ]]; then
                     print_status "$line"
                 fi

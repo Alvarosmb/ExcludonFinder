@@ -1,11 +1,11 @@
 #!/bin/bash
 
 
-# Get the location of this script and the scripts directory
-SCRIPT_DIR="$(dirname "$(readlink -f "$(which ExcludonFinder)")")"
-PACKAGE_DIR="$(dirname "$SCRIPT_DIR")"
-SCRIPTS_PATH="$PACKAGE_DIR/share/excludonfinder/scripts"
-export SCRIPTS_PATH
+# Verify SCRIPTS_PATH is available
+if [ -z "$SCRIPTS_PATH" ]; then
+    echo "Error: SCRIPTS_PATH is not set. This script should be called through ExcludonFinder" >&2
+    exit 1
+fi
 
 
 # Function to check if command exists
