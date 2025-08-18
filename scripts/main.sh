@@ -132,7 +132,10 @@ fi
 
 
 # Replace ID for gene_id if necessary
-sed -i 's/ID/gene_id/g' "$gff_input"
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  sed -i '' 's/ID/gene_id/g' "$gff_input"
+else
+  sed -i 's/ID/gene_id/g' "$gff_input"
 
 # Set up alignment based on paired/single end
 if [ -z "$fastq_input2" ]; then
