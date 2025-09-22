@@ -1,11 +1,23 @@
 #!/bin/bash
 
-# Verify SCRIPTS_PATH is set
+# Verify SCRIPTS_PATH is set or set it automatically
 if [ -z "$SCRIPTS_PATH" ]; then
-    # Try to set it automatically if not set
-    SCRIPT_DIR="$(dirname "$(readlink -f "$(which ExcludonFinder)")")"
-    PACKAGE_DIR="$(dirname "$SCRIPT_DIR")"
-    SCRIPTS_PATH="$PACKAGE_DIR/share/excludonfinder/scripts"
+    # Get the directory where this script is located
+    SCRIPT_DIR="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
+    
+    # Check if we're running from source code (scripts/ directory exists)
+    if [ -d "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/TUs_annotation.R" ]; then
+        # Running from source code
+        SCRIPTS_PATH="$SCRIPT_DIR"
+        echo "Running from source code, using local scripts directory" >&2
+    else
+        # Try to set it for package installation
+        SCRIPT_DIR_PACKAGE="$(dirname "$(readlink -f "$(which ExcludonFinder 2>/dev/null || echo "$0")")")"
+        PACKAGE_DIR="$(dirname "$SCRIPT_DIR_PACKAGE")"
+        SCRIPTS_PATH="$PACKAGE_DIR/share/excludonfinder/scripts"
+        echo "Trying package installation path: $SCRIPTS_PATH" >&2
+    fi
+    
     export SCRIPTS_PATH
 fi
 
