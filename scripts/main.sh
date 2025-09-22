@@ -32,7 +32,7 @@ show_help() {
 
 ExcludonFinder main processing script
 
-Usage: 
+Usage:
     main.sh -f <reference.fasta> -1 <reads_R1.fastq> [-2 <reads_R2.fastq>] -g <annotation.gff> [options]
 
 Required arguments:
@@ -95,14 +95,14 @@ gff_input=""
 use_minimap2=false
 run_control_script=false
 
-while getopts "f:1:2:g:t:j:lC" opt; do  
+while getopts "f:1:2:g:t:j:lC" opt; do
   case ${opt} in
     f ) fasta_input=$(realpath "${OPTARG}");;
     1 ) fastq_input1=$(realpath "${OPTARG}");;
     2 ) fastq_input2=$(realpath "${OPTARG}");;
     g ) gff_input=$(realpath "${OPTARG}");;
-    t ) threshold=$OPTARG;;   
-    j ) N_threads=$OPTARG;;   
+    t ) threshold=$OPTARG;;
+    j ) N_threads=$OPTARG;;
     l ) use_minimap2=true;;
     C ) run_control_script=true;;
     \? ) echo "Invalid option: -$OPTARG" 1>&2; exit 1;;
@@ -136,6 +136,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
   sed -i '' 's/ID/gene_id/g' "$gff_input"
 else
   sed -i 's/ID/gene_id/g' "$gff_input"
+fi
 
 # Set up alignment based on paired/single end
 if [ -z "$fastq_input2" ]; then
@@ -160,22 +161,22 @@ if $use_minimap2; then
     echo "Error: minimap2 alignment failed" >&2
     exit 1
   fi
-  
+
   # Convert SAM to sorted BAM
   if ! samtools view -@ "$N_threads" -bh "output/alignment/${sample}_temp.sam" 2>/dev/null | \
        samtools sort -@ "$N_threads" -o "output/alignment/${sample}_sorted.bam" 2>/dev/null; then
     echo "Error: SAM to BAM conversion failed" >&2
     exit 1
   fi
-  
+
   # Clean up temporary SAM file
   rm "output/alignment/${sample}_temp.sam"
 else
   # Create index files in the index directory
   index_prefix="output/index/$(basename "$fasta_input")"
   bwa-mem2 index -p "$index_prefix" "$fasta_input" >/dev/null 2>&1
-  bwa-mem2 mem -t "$N_threads" "$index_prefix" $input_fastq_option 2>/dev/null | 
-    samtools view -@ "$N_threads" -bh - 2>/dev/null | 
+  bwa-mem2 mem -t "$N_threads" "$index_prefix" $input_fastq_option 2>/dev/null |
+    samtools view -@ "$N_threads" -bh - 2>/dev/null |
     samtools sort -@ "$N_threads" -o "output/alignment/${sample}_sorted.bam" 2>/dev/null
 fi
 
@@ -197,7 +198,7 @@ bam="output/alignment/${sample}_sorted.bam"
 if $run_control_script; then
     # Create a temporary file for both stdout and stderr
     temp_file=$(mktemp)
-    
+
     if $use_minimap2; then
         featureCounts -a "$gff_input" -F GFF3 -t CDS -T "$N_threads" -L "$bam" -o "output/coverage_data/${sample}_counts.txt" > "$temp_file" 2>&1
     elif [ "$Paired" = "TRUE" ]; then
@@ -205,13 +206,13 @@ if $run_control_script; then
     else
         featureCounts -a "$gff_input" -F GFF3 -t CDS -T "$N_threads" "$bam" -o "output/coverage_data/${sample}_counts.txt" > "$temp_file" 2>&1
     fi
-    
-    # Extract the alignment rate 
+
+    # Extract the alignment rate
     if ! alignment_rate=$(grep "Assignment rate" "$temp_file" | grep -o '[0-9]\+\.[0-9]\+'); then
         # If the first grep fails, try an alternative pattern
         alignment_rate=$(grep "Successfully assigned" "$temp_file" | grep -o '[0-9]\+\.[0-9]\+')
     fi
-    
+
     # Check data status
     if [ -n "$alignment_rate" ]; then
         if (( $(echo "$alignment_rate < 80" | bc -l) )); then
@@ -222,7 +223,7 @@ if $run_control_script; then
     else
         echo "WARNING: Could not determine alignment rate"
     fi
-    
+
     # Clean up temp file
     rm -f "$temp_file"
 fi
@@ -230,7 +231,7 @@ fi
 echo "CALCULATING_DEPTH" >&2
 # Process reads based on strand
 if [ "$Paired" = "TRUE" ]; then
-    # Paired-end 
+    # Paired-end
     samtools view -h -f 0x40 -F 0x10 "$bam" > "output/alignment/${sample}_plus_strand_1.sam"
     samtools view -h -f 0x80 -f 0x10 "$bam" > "output/alignment/${sample}_plus_strand_2.sam"
     samtools merge -f "output/alignment/${sample}_plus_strand_merged.bam" \
@@ -243,7 +244,7 @@ if [ "$Paired" = "TRUE" ]; then
         "output/alignment/${sample}_minus_strand_1.sam" \
         "output/alignment/${sample}_minus_strand_2.sam"
 else
-    # Single-end 
+    # Single-end
     samtools view -bh -F 0x14 "$bam" > "output/alignment/${sample}_plus_strand_merged.bam"
     samtools view -bh -f 0x10 -F 0x4 "$bam" > "output/alignment/${sample}_minus_strand_merged.bam"
 fi
@@ -251,7 +252,7 @@ fi
 
 for strand in plus minus; do
     samtools sort -@ "$N_threads" "output/alignment/${sample}_${strand}_strand_merged.bam" \
-        -o "output/alignment/${sample}_${strand}_strand_sorted.bam" 2>/dev/null 
+        -o "output/alignment/${sample}_${strand}_strand_sorted.bam" 2>/dev/null
     samtools index "output/alignment/${sample}_${strand}_strand_sorted.bam"
     samtools depth -a "output/alignment/${sample}_${strand}_strand_sorted.bam" \
         > "output/coverage_data/${sample}_${strand}_depth.txt" 2>/dev/null
