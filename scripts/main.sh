@@ -159,6 +159,7 @@ else
   filename1=$(basename "$fastq_input1")
   sample=${filename1%_R1.fastq*}
   input_fastq_option="$fastq_input1 $fastq_input2"
+  Paired="TRUE"
 fi
 
 # Create output directories
