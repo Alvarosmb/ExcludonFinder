@@ -143,12 +143,9 @@ if [ -n "$fastq_input2" ] && [ ! -r "$fastq_input2" ]; then
   exit 1
 fi
 
-
-
-
-# Replace ID for gene_id if necessary
-# TODO change this stuff
-
+# Replace ID for gene_id if necessary, use local copy of gff
+cp "$gff_input" "$output_dir"/$(basename "$gff_input")
+gff_input="$output_dir"/$(basename "$gff_input")
 if [[ "$OSTYPE" == "darwin"* ]]; then
   sed -i '' 's/ID/gene_id/g' "$gff_input"
 else
