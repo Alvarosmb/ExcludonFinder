@@ -12,7 +12,6 @@ print_header(){
                --------------------------------------------
                                            --------------------------------------------
                                                       --------------------------------------------
-                                        V1.0.0                                                                                                                                                          
 EOF
 }
 
@@ -56,6 +55,8 @@ print_empty_line() {
 
 # Function to parse command line arguments with improved error handling
 parse_args() {
+    # default output dir
+    output_dir="output"
     while [[ $# -gt 0 ]]; do
         case "$1" in
             -f) shift; fasta_file="$1" ;;
@@ -66,6 +67,7 @@ parse_args() {
             -j) shift; threads="$1" ;;
             -l) long_reads="yes" ;;
             -C) qc="yes" ;;
+            -o) shift; output_dir="$1" ;;
             *) echo "Error: Unknown option: $1"; exit 1 ;;
         esac
         shift
@@ -104,7 +106,9 @@ check_requirements() {
     fi
 
     # Create output directory structure
-    mkdir -p output/{alignment,coverage_data} 2>/dev/null
+    mkdir -p "${output_dir}/index" 2>/dev/null
+    mkdir -p "${output_dir}/alignment" 2>/dev/null
+    mkdir -p "${output_dir}/coverage_data" 2>/dev/null
 
     return $errors
 }
@@ -149,6 +153,7 @@ main() {
     print_status "Data type   : $([[ -n "$fastq_r2" ]] && echo "Paired-end" || echo "Single-end")"
     [[ "$long_reads" == "yes" ]] && print_status "Long reads  : Yes"
     [[ "$qc" == "yes" ]] && print_status "QC enabled  : Yes"
+    print_status "Output dir  : ${output_dir}"
     print_footer
     
     # Start progress monitoring with improved formatting

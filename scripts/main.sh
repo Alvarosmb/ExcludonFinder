@@ -57,6 +57,7 @@ Optional arguments:
     -t <float>   Coverage threshold (default: 0.5)
     -j <int>     Number of threads (default: 8)
     -l           Use long-read mode (uses minimap2 instead of bwa-mem2)
+    -o           Supply a custom output dir (default: ./output)
     -C           Run quality control checks
     -h, --help   Show this help message
 
@@ -105,9 +106,10 @@ fastq_input1=""
 fastq_input2=""
 gff_input=""
 use_minimap2=false
+output_dir="output"
 run_control_script=false
 
-while getopts "f:1:2:g:t:j:lC" opt; do
+while getopts "f:1:2:g:t:j:l:o:C" opt; do
   case ${opt} in
     f ) fasta_input=$(realpath "${OPTARG}");;
     1 ) fastq_input1=$(realpath "${OPTARG}");;
@@ -116,6 +118,7 @@ while getopts "f:1:2:g:t:j:lC" opt; do
     t ) threshold=$OPTARG;;
     j ) N_threads=$OPTARG;;
     l ) use_minimap2=true;;
+    o ) output_dir=$(realpath "${OPTARG}");;
     C ) run_control_script=true;;
     \? ) echo "Invalid option: -$OPTARG" 1>&2; exit 1;;
     : ) echo "Option -$OPTARG requires an argument." 1>&2; exit 1;;
@@ -144,6 +147,8 @@ fi
 
 
 # Replace ID for gene_id if necessary
+# TODO change this stuff
+
 if [[ "$OSTYPE" == "darwin"* ]]; then
   sed -i '' 's/ID/gene_id/g' "$gff_input"
 else
@@ -161,62 +166,60 @@ else
   input_fastq_option="$fastq_input1 $fastq_input2"
 fi
 
-# Create output directories
-mkdir -p output/{alignment,coverage_data,index}
-
 # Perform alignment
 echo "STARTING_ALIGNMENT" >&2
 if $use_minimap2; then
   echo "Data type: Long reads detected" >&2
   # Modified minimap2 command with additional error checking
-  if ! minimap2 -t "$N_threads" -a -p 0.99 -k14 --MD -uf "$fasta_input" "$fastq_input1" > "output/alignment/${sample}_temp.sam" 2>/dev/null; then
+  if ! minimap2 -t "$N_threads" -a -p 0.99 -k14 --MD -uf "$fasta_input" "$fastq_input1" > "${output_dir}/alignment/${sample}_temp.sam" 2>/dev/null; then
     echo "Error: minimap2 alignment failed" >&2
     exit 1
   fi
 
   # Convert SAM to sorted BAM
-  if ! samtools view -@ "$N_threads" -bh "output/alignment/${sample}_temp.sam" 2>/dev/null | \
-       samtools sort -@ "$N_threads" -o "output/alignment/${sample}_sorted.bam" 2>/dev/null; then
+  if ! samtools view -@ "$N_threads" -bh "${output_dir}/alignment/${sample}_temp.sam" 2>/dev/null | \
+       samtools sort -@ "$N_threads" -o "${output_dir}/alignment/${sample}_sorted.bam" 2>/dev/null; then
     echo "Error: SAM to BAM conversion failed" >&2
     exit 1
   fi
 
   # Clean up temporary SAM file
-  rm "output/alignment/${sample}_temp.sam"
+  rm "${output_dir}/alignment/${sample}_temp.sam"
 else
   # Create index files in the index directory
-  index_prefix="output/index/$(basename "$fasta_input")"
+  index_prefix="${output_dir}/index/$(basename "$fasta_input")"
+  echo "$index_prefix"
   bwa-mem2 index -p "$index_prefix" "$fasta_input" >/dev/null 2>&1
   bwa-mem2 mem -t "$N_threads" "$index_prefix" $input_fastq_option 2>/dev/null |
     samtools view -@ "$N_threads" -bh - 2>/dev/null |
-    samtools sort -@ "$N_threads" -o "output/alignment/${sample}_sorted.bam" 2>/dev/null
+    samtools sort -@ "$N_threads" -o "${output_dir}/alignment/${sample}_sorted.bam" 2>/dev/null
 fi
 
 
-if ! samtools index "output/alignment/${sample}_sorted.bam"; then
+if ! samtools index "${output_dir}/alignment/${sample}_sorted.bam"; then
   echo "Error: BAM indexing failed" >&2
   exit 1
 fi
 
 # Get alignment stats
-mapped_percent=$(samtools flagstat "output/alignment/${sample}_sorted.bam" | grep "mapped" | head -n1 | awk -F'[(%]' '{print $2}')
-paired_percent=$(samtools flagstat "output/alignment/${sample}_sorted.bam" | grep "properly paired" | awk -F'[(%]' '{print $2}')
+mapped_percent=$(samtools flagstat "${output_dir}/alignment/${sample}_sorted.bam" | grep "mapped" | head -n1 | awk -F'[(%]' '{print $2}')
+paired_percent=$(samtools flagstat "${output_dir}/alignment/${sample}_sorted.bam" | grep "properly paired" | awk -F'[(%]' '{print $2}')
 
 echo "MAPPED_READS:$mapped_percent" >&2
 echo "PAIRED_READS:$paired_percent" >&2
 
-bam="output/alignment/${sample}_sorted.bam"
+bam="${output_dir}/alignment/${sample}_sorted.bam"
 
 if $run_control_script; then
     # Create a temporary file for both stdout and stderr
     temp_file=$(mktemp)
 
     if $use_minimap2; then
-        featureCounts -a "$gff_input" -F GFF3 -t CDS -T "$N_threads" -L "$bam" -o "output/coverage_data/${sample}_counts.txt" > "$temp_file" 2>&1
+        featureCounts -a "$gff_input" -F GFF3 -t CDS -T "$N_threads" -L "$bam" -o "${output_dir}/coverage_data/${sample}_counts.txt" > "$temp_file" 2>&1
     elif [ "$Paired" = "TRUE" ]; then
-        featureCounts -a "$gff_input" -F GFF3 -t CDS -T "$N_threads" -p -B -C "$bam" -o "output/coverage_data/${sample}_counts.txt" > "$temp_file" 2>&1
+        featureCounts -a "$gff_input" -F GFF3 -t CDS -T "$N_threads" -p -B -C "$bam" -o "${output_dir}/coverage_data/${sample}_counts.txt" > "$temp_file" 2>&1
     else
-        featureCounts -a "$gff_input" -F GFF3 -t CDS -T "$N_threads" "$bam" -o "output/coverage_data/${sample}_counts.txt" > "$temp_file" 2>&1
+        featureCounts -a "$gff_input" -F GFF3 -t CDS -T "$N_threads" "$bam" -o "${output_dir}/coverage_data/${sample}_counts.txt" > "$temp_file" 2>&1
     fi
 
     # Extract the alignment rate
@@ -244,30 +247,30 @@ echo "CALCULATING_DEPTH" >&2
 # Process reads based on strand
 if [ "$Paired" = "TRUE" ]; then
     # Paired-end
-    samtools view -h -f 0x40 -F 0x10 "$bam" > "output/alignment/${sample}_plus_strand_1.sam"
-    samtools view -h -f 0x80 -f 0x10 "$bam" > "output/alignment/${sample}_plus_strand_2.sam"
-    samtools merge -f "output/alignment/${sample}_plus_strand_merged.bam" \
-        "output/alignment/${sample}_plus_strand_1.sam" \
-        "output/alignment/${sample}_plus_strand_2.sam"
+    samtools view -h -f 0x40 -F 0x10 "$bam" > "${output_dir}/alignment/${sample}_plus_strand_1.sam"
+    samtools view -h -f 0x80 -f 0x10 "$bam" > "${output_dir}/alignment/${sample}_plus_strand_2.sam"
+    samtools merge -f "${output_dir}/alignment/${sample}_plus_strand_merged.bam" \
+        "${output_dir}/alignment/${sample}_plus_strand_1.sam" \
+        "${output_dir}/alignment/${sample}_plus_strand_2.sam"
 
-    samtools view -h -f 0x40 -f 0x10 "$bam" > "output/alignment/${sample}_minus_strand_1.sam"
-    samtools view -h -f 0x80 -F 0x10 "$bam" > "output/alignment/${sample}_minus_strand_2.sam"
-    samtools merge -f "output/alignment/${sample}_minus_strand_merged.bam" \
-        "output/alignment/${sample}_minus_strand_1.sam" \
-        "output/alignment/${sample}_minus_strand_2.sam"
+    samtools view -h -f 0x40 -f 0x10 "$bam" > "${output_dir}/alignment/${sample}_minus_strand_1.sam"
+    samtools view -h -f 0x80 -F 0x10 "$bam" > "${output_dir}/alignment/${sample}_minus_strand_2.sam"
+    samtools merge -f "${output_dir}/alignment/${sample}_minus_strand_merged.bam" \
+        "${output_dir}/alignment/${sample}_minus_strand_1.sam" \
+        "${output_dir}/alignment/${sample}_minus_strand_2.sam"
 else
     # Single-end
-    samtools view -bh -F 0x14 "$bam" > "output/alignment/${sample}_plus_strand_merged.bam"
-    samtools view -bh -f 0x10 -F 0x4 "$bam" > "output/alignment/${sample}_minus_strand_merged.bam"
+    samtools view -bh -F 0x14 "$bam" > "${output_dir}/alignment/${sample}_plus_strand_merged.bam"
+    samtools view -bh -f 0x10 -F 0x4 "$bam" > "${output_dir}/alignment/${sample}_minus_strand_merged.bam"
 fi
 
 
 for strand in plus minus; do
-    samtools sort -@ "$N_threads" "output/alignment/${sample}_${strand}_strand_merged.bam" \
-        -o "output/alignment/${sample}_${strand}_strand_sorted.bam" 2>/dev/null
-    samtools index "output/alignment/${sample}_${strand}_strand_sorted.bam"
-    samtools depth -a "output/alignment/${sample}_${strand}_strand_sorted.bam" \
-        > "output/coverage_data/${sample}_${strand}_depth.txt" 2>/dev/null
+    samtools sort -@ "$N_threads" "${output_dir}/alignment/${sample}_${strand}_strand_merged.bam" \
+        -o "${output_dir}/alignment/${sample}_${strand}_strand_sorted.bam" 2>/dev/null
+    samtools index "${output_dir}/alignment/${sample}_${strand}_strand_sorted.bam"
+    samtools depth -a "${output_dir}/alignment/${sample}_${strand}_strand_sorted.bam" \
+        > "${output_dir}/coverage_data/${sample}_${strand}_depth.txt" 2>/dev/null
 done
 
 echo "DEPTH COMPLETED" >&2
@@ -276,11 +279,11 @@ echo "STARTING_ANNOTATION" >&2
 
 
 # Run Excludon annotation
-Rscript "$SCRIPTS_PATH/TUs_annotation.R" "$fasta_input" "$gff_input" "$bam" "$sample" "$threshold" "$N_threads"
+Rscript "$SCRIPTS_PATH/TUs_annotation.R" "$fasta_input" "$gff_input" "$bam" "$output_dir" "$sample" "$threshold" "$N_threads"
 
 # Cleanup temporary files
-rm  -r "output/alignment/"
-rm  -r "output/coverage_data"
-
+rm  -r "${output_dir}/alignment/"
+rm  -r "${output_dir}/coverage_data"
+rm  -r "${output_dir}/index"
 
 echo "### The analysis is finished ###"

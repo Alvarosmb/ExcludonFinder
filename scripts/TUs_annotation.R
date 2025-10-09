@@ -1,10 +1,14 @@
 input_fasta <- as.character(commandArgs(trailingOnly = TRUE)[1])
 input_gff <- as.character(commandArgs(trailingOnly = TRUE)[2])
 input_bam <- as.character(commandArgs(trailingOnly = TRUE)[3])
-sample <-as.character(commandArgs(trailingOnly = TRUE)[4])
-threshold <- as.numeric(commandArgs(trailingOnly = TRUE)[5])
-N.threads <- as.integer(commandArgs(trailingOnly = TRUE)[6])
+output_dir <- as.character(commandArgs(trailingOnly = TRUE)[4])
+sample <- as.character(commandArgs(trailingOnly = TRUE)[5])
+threshold <- as.numeric(commandArgs(trailingOnly = TRUE)[6])
+N.threads <- as.integer(commandArgs(trailingOnly = TRUE)[7])
 num_cores <- N.threads
+
+# remove extra slashes
+output_dir <- gsub("\\/$", "", output_dir)
 
 suppressMessages({
   suppressWarnings({
@@ -80,13 +84,13 @@ minus_genes <- unique(genes_of_interest$locus_tag[genes_of_interest$strand == "-
 
 
 ##### Coverage #####
-depth_plus <- read.table(paste0("output/coverage_data/", sample, "_plus_depth.txt"),
+depth_plus <- read.table(paste0(output_dir, "/coverage_data/", sample, "_plus_depth.txt"),
                          sep = "\t", header = FALSE)
 
 
 
 
-depth_minus <- read.table(paste0("output/coverage_data/", sample, "_minus_depth.txt"),
+depth_minus <- read.table(paste0(output_dir, "/coverage_data/", sample, "_minus_depth.txt"),
                           sep = "\t", header = FALSE)
 
 
@@ -249,8 +253,8 @@ for (i in seq(1, nrow(df_convergent) - 1, 2)) {
     }
     
     if ((transcript_end - transcript_start) > 20) {
-      df_convergent[i, ]$Type <- "Excludon"
-      df_convergent[i + 1, ]$Type <- "Excludon"
+      df_convergent[i, ]$Type <- "excludon"
+      df_convergent[i + 1, ]$Type <- "excludon"
       range2 <- transcript_end
       range1 <- transcript_start
       
@@ -262,7 +266,7 @@ for (i in seq(1, nrow(df_convergent) - 1, 2)) {
   })
 }
 
-df_convergent_Excludons <- df_convergent[df_convergent$Type == "Excludon", ]
+df_convergent_excludons <- df_convergent[df_convergent$Type == "excludon", ]
 
 ###############################################
 df_divergent <- divergent_genes %>%
@@ -290,8 +294,8 @@ for (i in seq(1, nrow(df_divergent) - 1, 2)) {
     }
     
     if ((transcript_end - transcript_start) > 20) {
-      df_divergent[i, ]$Type <- "Excludon"
-      df_divergent[i + 1, ]$Type <- "Excludon"
+      df_divergent[i, ]$Type <- "excludon"
+      df_divergent[i + 1, ]$Type <- "excludon"
       range2 <- transcript_end
       range1 <- transcript_start
       
@@ -303,21 +307,17 @@ for (i in seq(1, nrow(df_divergent) - 1, 2)) {
   })
 }
 
-df_divergent_Excludons <- df_divergent[df_divergent$Type == "Excludon", ]
+df_divergent_excludons <- df_divergent[df_divergent$Type == "excludon", ]
 
 
-message("Number of Excludons:\n",
-        "  Convergent: ", nrow(df_convergent_Excludons)/2, "\n",
-        "  Divergent: ", nrow(df_divergent_Excludons)/2)
+message("Number of excludons:\n",
+        "  Convergent: ", nrow(df_convergent_excludons)/2, "\n",
+        "  Divergent: ", nrow(df_divergent_excludons)/2)
 
 
-if (!dir.exists("output/Excludons")) {
-  dir.create("output/Excludons")
+if (!dir.exists(paste0(output_dir, "/excludons"))) {
+  dir.create(paste0(output_dir, "/excludons"))
 }
 
-write.csv(df_convergent_Excludons, file = paste0("output/Excludons/Convergent_Excludons_", sample, ".csv"))
-write.csv(df_divergent_Excludons, file = paste0("output/Excludons/Divergent_Excludons_", sample, ".csv"))
-
-
-
-
+write.csv(df_convergent_excludons, file = paste0(output_dir, "/excludons/convergent_excludons_", sample, ".csv"))
+write.csv(df_divergent_excludons, file = paste0(output_dir, "/excludons/divergent_excludons_", sample, ".csv"))
