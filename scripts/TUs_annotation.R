@@ -1,11 +1,11 @@
-input_fasta <- as.character(commandArgs(trailingOnly = TRUE)[1])
-input_gff <- as.character(commandArgs(trailingOnly = TRUE)[2])
-input_bam <- as.character(commandArgs(trailingOnly = TRUE)[3])
-output_dir <- as.character(commandArgs(trailingOnly = TRUE)[4])
-sample <- as.character(commandArgs(trailingOnly = TRUE)[5])
-threshold <- as.numeric(commandArgs(trailingOnly = TRUE)[6])
-N.threads <- as.integer(commandArgs(trailingOnly = TRUE)[7])
-num_cores <- N.threads
+args <- commandArgs(trailingOnly = TRUE)
+input_fasta <- as.character(args[1])
+input_gff <- as.character(args[2])
+output_dir <- as.character(args[3])
+keep_intermediate <- as.logical(args[4])
+sample <- as.character(args[5])
+threshold <- as.numeric(args[6])
+num_cores <- as.integer(args[7])
 
 # remove extra slashes
 output_dir <- gsub("\\/$", "", output_dir)
@@ -56,8 +56,8 @@ gff <- gff %>%
 gff <- as.data.frame(gff)
 
 #### Subset convergent and divergent pairs of genes
-#gff <- gff[gff$seqnames == list_chr[1],]
-gff <- gff[, c("seqnames", "start", "end", "strand", "type", "locus_tag", "gene")]
+gff_cols <- c("seqnames", "start", "end", "strand", "source", "type", "score", "phase", "locus_tag", "gene")
+gff <- gff[, gff_cols]
 convergent_genes <- list()
 for (i in 1:(nrow(gff) - 1)) {
   if (gff$strand[i] == "+" & gff$strand[i + 1] == "-") {
@@ -66,7 +66,7 @@ for (i in 1:(nrow(gff) - 1)) {
 }
 convergent_genes <- gff[unlist(convergent_genes), ]
 
-divergent_genes<- list()
+divergent_genes <- list()
 for (i in 1:(nrow(gff) - 1)) {
   if (gff$strand[i] == "-" & gff$strand[i + 1] == "+") {
     divergent_genes <- append(divergent_genes, list(c(i, i + 1)))
@@ -225,12 +225,12 @@ results_list_minus <- foreach(gene_id = minus_genes, .combine = "rbind", .packag
 # Stop parallel backend
 stopCluster(cl)
 
-transcripts_df <- rbind(results_list_plus, results_list_minus)
+df_transcripts <- rbind(results_list_plus, results_list_minus)
 
 
 ######## OVERLAP ANNOTATION #######
 df_convergent <- convergent_genes %>%
-  left_join(transcripts_df %>%
+  left_join(df_transcripts %>%
               select(transcript_start, transcript_end, gene_coverage, locus_tag),
             by = "locus_tag") %>%
   distinct() %>%
@@ -270,7 +270,7 @@ df_convergent_excludons <- df_convergent[df_convergent$Type == "excludon", ]
 
 ###############################################
 df_divergent <- divergent_genes %>%
-  left_join(transcripts_df %>%
+  left_join(df_transcripts %>%
               select(transcript_start, transcript_end, gene_coverage, locus_tag),
             by = "locus_tag") %>%
   distinct() %>%
@@ -319,5 +319,32 @@ if (!dir.exists(paste0(output_dir, "/excludons"))) {
   dir.create(paste0(output_dir, "/excludons"))
 }
 
-write.csv(df_convergent_excludons, file = paste0(output_dir, "/excludons/convergent_excludons_", sample, ".csv"))
-write.csv(df_divergent_excludons, file = paste0(output_dir, "/excludons/divergent_excludons_", sample, ".csv"))
+# function to export as CSV and GFF
+export_results <- function(df, prefix, gff = TRUE) {
+  df <- df %>%
+    dplyr::rename(
+      gene_start = start,
+      gene_end = end,
+      start = transcript_start,
+      end = transcript_end
+    ) %>%
+    dplyr::select(any_of(gff_cols), everything())
+  write.csv(df, file = paste0(output_dir, "/excludons/", prefix, sample, ".csv"), row.names = FALSE)
+  as(df, "GRanges") %>%
+     rtracklayer::export(paste0(output_dir, "/excludons/", prefix, sample, ".gff"), format = "gff3")
+}
+
+# export all transcripts
+if (keep_intermediate) {
+  df_transcripts %>%
+    left_join(gff, by = "locus_tag") %>%
+    dplyr::select(-gene_id) %>%
+    export_results(prefix = "all_transcripts_", gff = TRUE)
+}
+
+# export excludons
+df_convergent_excludons %>%
+  export_results(prefix = "convergent_excludons_", gff = TRUE)
+
+df_divergent_excludons %>%
+  export_results(prefix = "divergent_excludons_", gff = TRUE)

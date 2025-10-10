@@ -68,6 +68,7 @@ parse_args() {
             -l) long_reads="yes" ;;
             -C) qc="yes" ;;
             -o) shift; output_dir="$1" ;;
+            -k) keep_intermediate="yes" ;;
             *) echo "Error: Unknown option: $1"; exit 1 ;;
         esac
         shift
@@ -153,7 +154,8 @@ main() {
     print_status "Data type   : $([[ -n "$fastq_r2" ]] && echo "Paired-end" || echo "Single-end")"
     [[ "$long_reads" == "yes" ]] && print_status "Long reads  : Yes"
     [[ "$qc" == "yes" ]] && print_status "QC enabled  : Yes"
-    print_status "Output dir  : ${output_dir}"
+    print_status "Output dir  : $output_dir"
+    print_status "Keep interm.: ${keep_intermediate:-No}"
     print_footer
     
     # Start progress monitoring with improved formatting

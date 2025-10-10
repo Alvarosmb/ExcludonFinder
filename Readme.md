@@ -63,6 +63,7 @@ ExcludonFinder -f <reference.fasta> -1 <reads_R1.fastq> -2 <reads_R2.fastq> -g <
 - `-j`: Number of threads (default: 8)
 - `-l`: Long-read data
 - `-o`: Custom output dir (default: `./output`)
+- `-k`: Keep intermediate files (default: remove)
 ```
 
 ## Example

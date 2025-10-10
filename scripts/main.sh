@@ -58,6 +58,7 @@ Optional arguments:
     -j <int>     Number of threads (default: 8)
     -l           Use long-read mode (uses minimap2 instead of bwa-mem2)
     -o           Supply a custom output dir (default: ./output)
+    -k           Keep intermediate files (default: remove)
     -C           Run quality control checks
     -h, --help   Show this help message
 
@@ -107,9 +108,10 @@ fastq_input2=""
 gff_input=""
 use_minimap2=false
 output_dir="output"
+keep_intermediate=false
 run_control_script=false
 
-while getopts "f:1:2:g:t:j:l:o:C" opt; do
+while getopts "f:1:2:g:t:j:o:lkC" opt; do
   case ${opt} in
     f ) fasta_input=$(realpath "${OPTARG}");;
     1 ) fastq_input1=$(realpath "${OPTARG}");;
@@ -117,13 +119,15 @@ while getopts "f:1:2:g:t:j:l:o:C" opt; do
     g ) gff_input=$(realpath "${OPTARG}");;
     t ) threshold=$OPTARG;;
     j ) N_threads=$OPTARG;;
-    l ) use_minimap2=true;;
     o ) output_dir=$(realpath "${OPTARG}");;
+    l ) use_minimap2=true;;
+    k ) keep_intermediate=true;;
     C ) run_control_script=true;;
     \? ) echo "Invalid option: -$OPTARG" 1>&2; exit 1;;
     : ) echo "Option -$OPTARG requires an argument." 1>&2; exit 1;;
   esac
 done
+
 # Check that mandatory input files are specified
 if [ -z "$fasta_input" ] || [ -z "$gff_input" ]; then
   echo "Usage: $0 -f <fasta_input> -1 <fastq_input_1> [-2 <fastq_input_2>] -g <gff_input> [-t coverage threshol] [-l]" >&2
@@ -144,6 +148,7 @@ if [ -n "$fastq_input2" ] && [ ! -r "$fastq_input2" ]; then
 fi
 
 # Replace ID for gene_id if necessary, use local copy of gff
+echo "$output_dir"
 cp "$gff_input" "$output_dir"/$(basename "$gff_input")
 gff_input="$output_dir"/$(basename "$gff_input")
 if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -276,11 +281,13 @@ echo "STARTING_ANNOTATION" >&2
 
 
 # Run Excludon annotation
-Rscript "$SCRIPTS_PATH/TUs_annotation.R" "$fasta_input" "$gff_input" "$bam" "$output_dir" "$sample" "$threshold" "$N_threads"
+Rscript "$SCRIPTS_PATH/TUs_annotation.R" "$fasta_input" "$gff_input" "$output_dir" "$keep_intermediate" "$sample" "$threshold" "$N_threads"
 
 # Cleanup temporary files
-rm  -r "${output_dir}/alignment/"
-rm  -r "${output_dir}/coverage_data"
-rm  -r "${output_dir}/index"
+if ! $keep_intermediate; then
+  rm  -r "${output_dir}/alignment/"
+  rm  -r "${output_dir}/coverage_data"
+  rm  -r "${output_dir}/index"
+fi
 
 echo "### The analysis is finished ###"
