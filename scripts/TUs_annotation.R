@@ -41,7 +41,7 @@ suppressPackageStartupMessages({
 
 
 ### Load input data
-gff <- rtracklayer::import(input_gff)
+gff <- rtracklayer::import(input_gff, format = "gff3")
 gff <- as.data.frame(gff)
 gff <- gff[gff$type == "CDS", ]
 duplicated_columns <- names(gff)[duplicated(names(gff))]
@@ -328,7 +328,11 @@ export_results <- function(df, prefix, gff = TRUE) {
       start = transcript_start,
       end = transcript_end
     ) %>%
-    dplyr::select(any_of(gff_cols), everything())
+    dplyr::select(any_of(gff_cols), everything()) %>%
+    dplyr::mutate(
+      source = "ExcludonFinder",
+      type = "transcript"
+    )
   write.csv(df, file = paste0(output_dir, "/excludons/", prefix, sample, ".csv"), row.names = FALSE)
   as(df, "GRanges") %>%
      rtracklayer::export(paste0(output_dir, "/excludons/", prefix, sample, ".gff"), format = "gff3")
