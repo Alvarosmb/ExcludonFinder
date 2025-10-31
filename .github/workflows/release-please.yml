@@ -1,0 +1,32 @@
+# Nombre de la acción que aparecerá en la pestaña "Actions" de GitHub
+name: Release Please
+
+# Define cuándo debe ejecutarse esta acción. 
+# En este caso, cada vez que se hace un 'push' (se suben commits) 
+# a la rama principal ('main').
+on:
+  push:
+    branches:
+      - main 
+
+# Define los permisos que la acción necesita para funcionar.
+# ES CRUCIAL para que pueda crear la Release PR, actualizar archivos y crear tags.
+permissions:
+  contents: write # Para escribir el CHANGELOG y crear el Tag/Release
+  pull-requests: write # Para crear y actualizar la Pull Request de Release
+
+# Define los trabajos (jobs) que se van a ejecutar
+jobs:
+  release-please:
+    runs-on: ubuntu-latest # El entorno donde se ejecutará (una máquina virtual)
+    steps:
+      # Paso 1: Usar la acción de Release Please
+      - uses: googleapis/release-please-action@v4
+        id: release # Le damos un ID al paso (útil si quieres usar sus salidas)
+        with:
+          # Tipo de release. Dado que tu proyecto es Python, 
+          # Release Please intentará actualizar el archivo de versión Python (si lo tienes). 
+          # Si no estás seguro, 'simple' funciona para un proyecto sin un archivo de versión específico.
+          release-type: python 
+          # El token de autenticación. Usaremos el token incorporado de GitHub.
+          token: ${{ secrets.GITHUB_TOKEN }}
