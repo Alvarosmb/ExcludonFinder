@@ -8,7 +8,7 @@ dependencies:
   - r-base=4.1
   
   # Alignment tools
-  - bowtie2
+  
   - bwa-mem2=2.2.1
   - minimap2=2.24
   - samtools=1.15
