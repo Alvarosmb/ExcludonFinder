@@ -128,7 +128,7 @@ else
             mkdir -p "$output_dir"/temp_split
             filename=$(basename "$fastq_input1")
             sample=${filename%.fastq*}
-            
+
             # Split the interleaved file into R1 and R2.
             reformat.sh in="$fastq_input1" \
                 out1="$output_dir/temp_split/${sample}_R1.fastq" \
@@ -156,12 +156,12 @@ fi
 if [ "$Paired" = "FALSE" ]; then
   filename=$(basename "$fastq_input1")
   sample=${filename%.fastq*}
-  input_fastq_option="$fastq_input1"
+  input_fastq_files=("$fastq_input1")
 else
   filename1=$(basename "$fastq_input1")
   # Handle different naming conventions like .fastq, .fq, _R1.fastq, _1.fastq etc.
   sample=$(basename "$fastq_input1" | sed -E 's/(_R1|_1)?\.(fastq|fq)(\.gz)?$//')
-  input_fastq_option="$fastq_input1 $fastq_input2"
+  input_fastq_files=("$fastq_input1" "$fastq_input2")
 fi
 
 # Perform alignment.
@@ -175,7 +175,7 @@ if $use_minimap2; then
 else
     index_prefix="$output_dir/index/$(basename "$fasta_input")"
     bwa-mem2 index -p "$index_prefix" "$fasta_input" >/dev/null 2>&1
-    bwa-mem2 mem -t "$N_threads" "$index_prefix" $input_fastq_option 2>/dev/null | \
+    bwa-mem2 mem -t "$N_threads" "$index_prefix" "${input_fastq_files[@]}" 2>/dev/null | \
       samtools view -@ "$N_threads" -bh - 2>/dev/null | \
       samtools sort -@ "$N_threads" -o "$bam_output_path" 2>/dev/null
 fi
@@ -195,7 +195,7 @@ if [ "$Paired" = "TRUE" ]; then
     samtools view -h -f 0x40 -F 0x10 "$bam_output_path" 2>/dev/null | samtools sort -@ "$N_threads" -o "$output_dir/alignment/plus_1.bam" 2>/dev/null
     samtools view -h -f 0x80 -f 0x10 "$bam_output_path" 2>/dev/null | samtools sort -@ "$N_threads" -o "$output_dir/alignment/plus_2.bam" 2>/dev/null
     samtools merge -f "$output_dir/alignment/plus_merged.bam" "$output_dir/alignment/plus_1.bam" "$output_dir/alignment/plus_2.bam" >/dev/null 2>&1
-    
+
     samtools view -h -f 0x40 -f 0x10 "$bam_output_path" 2>/dev/null | samtools sort -@ "$N_threads" -o "$output_dir/alignment/minus_1.bam" 2>/dev/null
     samtools view -h -f 0x80 -F 0x10 "$bam_output_path" 2>/dev/null | samtools sort -@ "$N_threads" -o "$output_dir/alignment/minus_2.bam" 2>/dev/null
     samtools merge -f "$output_dir/alignment/minus_merged.bam" "$output_dir/alignment/minus_1.bam" "$output_dir/alignment/minus_2.bam" >/dev/null 2>&1
