@@ -143,13 +143,28 @@ else
     fi
 fi
 
-# Prepare GFF file: create a local copy and replace 'ID' with 'gene_id'.
+# ✅ FIX: Prepare GFF file - create a local copy and normalize attributes
 cp "$gff_input" "$output_dir"/$(basename "$gff_input")
 gff_input="$output_dir"/$(basename "$gff_input")
+
+# 1. Fix GFF header if corrupted (remove extra spaces in version directive)
 if [[ "$OSTYPE" == "darwin"* ]]; then
-  sed -i '' 's/ID/gene_id/g' "$gff_input"
+  sed -i '' '1s/##gff-version 3.*/##gff-version 3/' "$gff_input"
 else
-  sed -i 's/ID/gene_id/g' "$gff_input"
+  sed -i '1s/##gff-version 3.*/##gff-version 3/' "$gff_input"
+fi
+
+# 2. Normalize attributes for R script compatibility
+# - Change ID= to gene_id= (only word boundaries to avoid false matches)
+# - Change name= to gene= (both after semicolon and at start of attributes)
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  sed -i '' -e 's/\bID=/gene_id=/g' \
+            -e 's/;name=/;gene=/g' \
+            -e 's/\tname=/\tgene=/g' "$gff_input"
+else
+  sed -i -e 's/\bID=/gene_id=/g' \
+         -e 's/;name=/;gene=/g' \
+         -e 's/\tname=/\tgene=/g' "$gff_input"
 fi
 
 # Define sample name and input files for the aligner.

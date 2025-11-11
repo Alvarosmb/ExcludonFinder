@@ -13,18 +13,18 @@ output_dir <- gsub("\\/$", "", output_dir)
 suppressMessages({
   suppressWarnings({
     options(repos = c(CRAN = "https://cloud.r-project.org"))
-    
+
     if (!require("BiocManager", quietly = TRUE)) {
       install.packages("BiocManager", quiet = TRUE)
     }
-    
+
     required_packages <- c("dplyr", "foreach", "doParallel", "data.table")
     for(package in required_packages) {
       if(!require(package, character.only = TRUE, quietly = TRUE)) {
         install.packages(package, quiet = TRUE)
       }
     }
-    
+
     if(!require("rtracklayer", quietly = TRUE)) {
       BiocManager::install("rtracklayer", quiet = TRUE)
     }
@@ -54,6 +54,24 @@ gff <- gff %>%
   group_by(locus_tag) %>%
   filter(end - start == max(end - start))
 gff <- as.data.frame(gff)
+
+# ✅ FIX: Ensure "gene" column exists for downstream analysis
+# This handles GFF files with different naming conventions (Name, name, gene_id, etc.)
+if (!"gene" %in% colnames(gff)) {
+  if ("Name" %in% colnames(gff)) {
+    # Prefer Name (standard GFF3 attribute for display names)
+    gff$gene <- gff$Name
+  } else if ("name" %in% colnames(gff)) {
+    # Handle lowercase name (non-standard but common)
+    gff$gene <- gff$name
+  } else if ("gene_id" %in% colnames(gff)) {
+    # Use gene_id if available
+    gff$gene <- gff$gene_id
+  } else {
+    # Fallback: use locus_tag (always present in prokaryotic genomes)
+    gff$gene <- gff$locus_tag
+  }
+}
 
 #### Subset convergent and divergent pairs of genes
 gff_cols <- c("seqnames", "start", "end", "strand", "source", "type", "score", "phase", "locus_tag", "gene")
@@ -99,19 +117,19 @@ depth_minus <- depth_minus[!duplicated(depth_minus), ]
 
 
 ### Confirm strandness of data
-random_genes <- gff %>% 
-  filter(strand == "+") %>% 
+random_genes <- gff %>%
+  filter(strand == "+") %>%
   sample_n(50)
 
 get_coverage <- function(gene_id){
-  
+
   start <- gff[gff$locus_tag == gene_id, ]$start
   end <- gff[gff$locus_tag == gene_id, ]$end
   median_plus <- median(depth_plus[start:end, 3])
   median_minus <- median(depth_minus[start:end, 3])
-  
+
   return(list(median_plus = median_plus, median_minus = median_minus))
-  
+
 }
 
 coverage_results <- lapply(random_genes$locus_tag, get_coverage)
@@ -143,61 +161,61 @@ calculate_transcript_info <- function(gene_id, depth_table) {
   strand <- gff[gff$locus_tag == gene_id, ]$strand
   gene_tss <- gff[gff$locus_tag == gene_id, ]$start
   gene_tts <- gff[gff$locus_tag == gene_id, ]$end
-  
+
   # Check if coordinates exist in depth_table
   if (gene_tss > nrow(depth_table) || gene_tts > nrow(depth_table)) {
     return(NULL)
   }
-  
+
   # Extract coverage for the gene region
   coverage <- depth_table[gene_tss:gene_tts, "V3"]
-  
+
   # Check for NA values
   na_percentage <- sum(is.na(coverage)) / length(coverage) * 100
   if(na_percentage > 30) {
     return(NULL)
   }
-  
+
   coverage <- coverage[!is.na(coverage)]
-  
+
   # Calculate gene coverage - only consider non-zero values
   gene_coverage <- if(length(coverage[coverage > 0]) > 0) {
     round(median(coverage[coverage > 0]))
   } else {
     0
   }
- 
+
   cov_threshold <- threshold * gene_coverage
-  
+
   is_below_threshold1 <- sapply(coverage[1:min(6, length(coverage))], function(x) x < cov_threshold)
-  
+
   if (sum(is_below_threshold1) == min(6, length(coverage)) | gene_coverage == 0) {
     transcript_start <- gene_tss
   } else {
     upstream_pos <- depth_table[1:gene_tss, ]
     upstream_pos <- upstream_pos[rev(seq_len(nrow(upstream_pos))), ]
-    
+
     upstream_pos$below_threshold <- ifelse(upstream_pos$V3 < cov_threshold, 1, 0)
     upstream_pos$consecutive_count <- cumsum(upstream_pos$below_threshold)
-    
+
     split_df <- upstream_pos[upstream_pos$consecutive_count >= 3, ]
     transcript_start <- if(nrow(split_df) > 0) split_df[1, "V2"] else gene_tss
   }
-  
-  is_below_threshold2 <- sapply(coverage[(length(coverage) - min(5, length(coverage)-1)):length(coverage)], 
+
+  is_below_threshold2 <- sapply(coverage[(length(coverage) - min(5, length(coverage)-1)):length(coverage)],
                                 function(x) x < cov_threshold)
-  
+
   if (sum(is_below_threshold2) == min(6, length(coverage)) | gene_coverage == 0) {
     transcript_end <- gene_tts
   } else {
     downstream_pos <- depth_table[gene_tts:nrow(depth_table), ]
     downstream_pos$below_threshold <- ifelse(downstream_pos$V3 < cov_threshold, 1, 0)
     downstream_pos$consecutive_count <- cumsum(downstream_pos$below_threshold)
-    
+
     split_df <- downstream_pos[downstream_pos$consecutive_count >= 3, ]
     transcript_end <- if(nrow(split_df) > 0) split_df[1, "V2"] else gene_tts
   }
-  
+
   return(data.frame(
     locus_tag = locus_tag,
     gene_id = gene_name,
@@ -243,26 +261,26 @@ for (i in seq(1, nrow(df_convergent) - 1, 2)) {
   tryCatch({
     transcript_end <- df_convergent[i, ]$transcript_end
     transcript_start <- df_convergent[i + 1, ]$transcript_start
-    
+
     if (is.na(transcript_end) || is.na(transcript_start)) {
       next
     }
-    
+
     if (!is.numeric(transcript_end) || !is.numeric(transcript_start)) {
       next
     }
-    
+
     if ((transcript_end - transcript_start) > 20) {
       df_convergent[i, ]$Type <- "excludon"
       df_convergent[i + 1, ]$Type <- "excludon"
       range2 <- transcript_end
       range1 <- transcript_start
-      
+
       df_convergent[i, ]$Overlapping_cov_plus <- round(mean(depth_plus[range1:range2, 3]))
       df_convergent[i, ]$Overlapping_cov_minus <- round(mean(depth_minus[range1:range2, 3]))
     }
   }, error = function(e) {
-    
+
   })
 }
 
@@ -283,27 +301,27 @@ for (i in seq(1, nrow(df_divergent) - 1, 2)) {
   tryCatch({
     transcript_end <- df_divergent[i, ]$transcript_end
     transcript_start <- df_divergent[i + 1, ]$transcript_start
-    
+
     if (is.na(transcript_end) || is.na(transcript_start)) {
       next
     }
-    
+
     if (!is.numeric(transcript_end) || !is.numeric(transcript_start)) {
-      
+
       next
     }
-    
+
     if ((transcript_end - transcript_start) > 20) {
       df_divergent[i, ]$Type <- "excludon"
       df_divergent[i + 1, ]$Type <- "excludon"
       range2 <- transcript_end
       range1 <- transcript_start
-      
+
       df_divergent[i, ]$Overlapping_cov_plus <- round(mean(depth_plus[range1:range2, 3]))
       df_divergent[i, ]$Overlapping_cov_minus <- round(mean(depth_minus[range1:range2, 3]))
     }
   }, error = function(e) {
-    
+
   })
 }
 
