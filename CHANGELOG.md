@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.1](https://github.com/Alvarosmb/ExcludonFinder/compare/v0.2.0...v0.2.1) (2025-11-11)
+
+
+### Bug Fixes
+
+* correct handling of paired-end FASTQ files with spaces in paths ([adc4456](https://github.com/Alvarosmb/ExcludonFinder/commit/adc44568d9757a03fae272ae87e76f0c2c7d096f))
+* improve GFF parsing robustness for non-standard formats ([4d5e3dd](https://github.com/Alvarosmb/ExcludonFinder/commit/4d5e3ddde5ecc29b494b3aa82977d36a3fe168af))
+
 ## [0.2.0](https://github.com/Alvarosmb/ExcludonFinder/compare/v0.1.7...v0.2.0) (2025-10-31)
 
 
